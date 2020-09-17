@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="./css/public.css">
+    <link rel="stylesheet" href="./css/user_main.min.css">
+    <link rel="stylesheet" href="./font/css/font-awesome.min.css">
+    <script src="js/jquery-1.12.2.js"></script>
+    <script src="js/vue.js"></script>
+    <script src="js/axios.js"></script>
+</head>
+<body>
+    <div id="app">
+    <div class="header">
+        <div class="header-l fl center">
+            XX图书管理系统
+        </div>
+        <div class="header-r fr">
+            <span>用户名 <span class="fa fa-user"></span> :</span>
+            <span id="userName">{{user_name}}</span>
+            <span @click="layout" id="layout">退出</span>
+        </div>
+    </div>
+    <div class="main">
+        <div class="main-l fl">
+            <li @click="isshow=1">图书列表</li>
+            <li @click="isshow=2">个人中心</li>
+            <li @click="isshow=3">充值中心</li>
+            <li @click="isshow=4">温馨提示</li>
+            <li @click="isshow=5">会员中心</li>
+        </div>
+        <div class="main-r fr">
+            <div class="tushuliebiao" v-show="isshow==1?true:false">
+                <h2 class="center">图书列表信息</h2>
+                <div class="chaxun">
+                    <span>书名：</span><input type="text" name="bookName" v-model="bookName" placeholder="输入你要查找的书名">
+                    <span>作者：</span><input type="text" name="bookAuthor" v-model="bookAuthor" placeholder="输入你要查找的作者">
+                    <input type="button" @click="chaxunfn" value="查询" >
+                </div>
+                <table border="1" cellspacing="0">
+                    <tr>
+                        <td>编号</td>
+                        <td>书名</td>
+                        <td>作者</td>
+                        <td>存量</td>
+                        <td>单天租金</td>
+                        <td>借书</td>
+                    </tr>
+                    <tr v-for="(item,index) in lists" :key="item.id">
+                        <td>{{item.id}}</td>
+                        <td>{{item.book_name}}</td>
+                        <td>{{item.book_author}}</td>
+                        <td>{{item.book_nums}}</td>
+                        <td>{{item.book_price}}</td>
+                        <td><button class="jieshuBtn" @click="jieshufn(item.book_name,item.book_price,item.book_author)">借书</button></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="gerenzhongxin" v-show="isshow==2?true:false">
+                <h2 class="center" style="margin-top:20px">个人中心</h2>
+                <h4 class="center" style="color:red">借书记录</h4>
+                <table border="1" cellspacing="0">
+                    <tr>
+                        <td>编号</td>
+                        <td>书名</td>
+                        <td>作者</td>
+                        <td>借书数量</td>
+                        <td>借书时长</td>
+                        <td>借书单价</td>
+                        <td>借书总价</td>
+                        <td>开始借书时间</td>
+                        <td>还书操作</td>
+                    </tr>
+                    <tr v-for="(item,index) in listsSelf" :key="index">
+                        <td>{{item.pages+index+1}}</td>
+                        <td>{{item.book_name}}</td>
+                        <td>{{item.book_author}}</td>
+                        <td>{{item.borrow_nums}}</td>
+                        <td>{{item.borrow_time}}</td>
+                        <td>{{item.book_price}}</td>
+                        <td>{{item.borow_total_price}}</td>
+                        <td>{{item.start_time}}</td>
+                        <td><button @click="huanshu(item.book_name,item.book_author,item.borrow_nums,item.id)">还书</button></td>
+                    </tr>
+                </table>
+                <div class="center" id="fenye">
+                    <button class="span" @click="shou_ye" :disabled="num==0">首页</button>
+                    <button class="span" style="margin:0px 20px" @click="pre_ye" :disabled="num==0">上一页</button>
+                    <button class="span" @click="next_ye" :disabled="num==wei_num">下一页</button>
+                    <button class="span" style="margin-left:20px" @click="wei_ye" :disabled="num==wei_num">尾页</button>
+                </div>
+            </div>
+            <div class="chongzhizhongxin" v-show="isshow==3?true:false">
+                <h2 class="center">充值中心</h2>
+                <div class="box">
+                    <span>余额：</span><span>{{money}}元</span><br/>
+                    <button @click="chongzhifn">充值</button><input type="text" v-model="moneys" placeholder="输入你要充值的金额">
+                </div>
+            </div>
+            <div class="wenxintishi" v-show="isshow==4?true:false">
+                <div class="box">
+                    <h2 class="center">温馨提示</h2>
+                    <h4>1、账户余额必须大于借书金额，否则不能借书</h4>
+                    <h4>2、必须在借书规定时间点还书，超过借书时间点还书，会按照图书单天租金的1.5倍来计算当天的租金，若提前还书，则会返回多收的金额</h4>
+                </div>
+            </div>
+            <div class="huiyuanzhongxin" v-show="isshow==5?true:false">
+                <input type="button" value="退出会员" id="btns" @click="tuichuhuiyuan">
+            </div>
+        </div>
+    </div>
+    <div class="footer center">
+        XX图书欢迎你的到来
+    </div>
+</div>
+</body>
+</html>
+<script>
+    
+    new Vue({
+        el:"#app",
+        data:{
+            lists:[],
+            user_name:'',//用户名
+            bookName:'',
+            bookAuthor:'',
+            isshow:1,//显示哪个模块
+            money:0,//余额
+            moneys:'',//要充值的金额
+            listsSelf:[],//借书记录的列表
+            num:0,//页数
+            wei_num:''
+        },
+        mounted(){
+            //获取用户名
+            axios.get('./php/getUserName.php?userId='+window.localStorage.getItem('user_code')).then((res)=>{
+                console.log(res)
+                this.user_name=res
+            })
+            //更新余额
+            this.restMoney()
+            //个人中心初始化数据
+            this.initSelfData()
+            //初始化尾页的个数
+            this.wei_ye_fn()
+        },
+        watch:{
+            bookName(){
+                this.chaxunfn()
+            },
+            bookAuthor(){
+                this.chaxunfn()
+            }
+        },
+        methods:{
+            //获取尾页的个数
+            wei_ye_fn(){
+                axios.get('./php/get_wei_num.php?userId='+window.localStorage.getItem('user_code')).then((res)=>{
+                    this.wei_num=res
+                })
+            },
+            //借书按钮
+            jieshufn(name,book_price,author){
+                let num=prompt("输入你要借书的数量");
+                let dayNum=prompt("输入你要借此书的天数");
+                if(num==null || dayNum==null){
+                    return false
+                }
+                let book_name=name;
+                let price_oneday=book_price;
+                let book_author=author
+                let url='./php/insertBorrowInfo.php?user_name='+this.user_name+'&userId='+window.localStorage.getItem('user_code')+'&book_name='+book_name+'&borrow_nums='+num+'&book_price='+price_oneday+'&borrow_time='+dayNum+'&book_author='+book_author
+                axios.get(url).then((res)=>{
+                    console.log(res)
+                    //同步注册信息中的余额
+                    let url='./php/tongbuyu_e.php?money='+res+'&userId='+window.localStorage.getItem('user_code')
+                    axios.get(url).then((res)=>{
+                        console.log(res)
+                        if(res=='ok'){
+                            alert('借书成功')
+                            this.initSelfData()
+                            this.restMoney()
+                            this.wei_ye_fn()
+                        }else{
+                            alert('请检查您的余额是否充足')
+                        }
+                    })
+                })
+            },
+            //搜索按钮
+            chaxunfn(){
+                let url='./php/lists_main.php?bookName='+this.bookName+'&bookAuthor='+this.bookAuthor;
+                if(this.bookName=='' && this.bookAuthor==''){
+                    // console.log('查询的内容为空')
+                    return
+                }else{
+                    axios.get(url).then((res)=>{
+                        this.lists=res
+                    })
+                } 
+            },
+            //获取余额
+            restMoney(){
+                let url='./php/getRestMoney.php?userId='+window.localStorage.getItem('user_code');
+                axios.get(url).then((res)=>{
+                    // console.log(res)
+                    this.money=res
+                })
+            },
+            //充值中心
+            chongzhifn(){
+                let url='./php/updateRestMoney.php?userId='+window.localStorage.getItem('user_code')+'&moneys='+this.moneys;
+                axios.get(url).then((res)=>{
+                    console.log(res)
+                    if(res=='ok'){
+                        alert("充值成功")
+                        this.moneys=''
+                        this.restMoney()
+                    }
+                })
+            },
+            //个人中心数据初始化
+            initSelfData(){
+                axios.get('./php/selfDatas.php?userId='+window.localStorage.getItem('user_code')+'&num='+this.num).then((res)=>{
+                    console.log(res)
+                    this.listsSelf=res
+                })
+            },
+            //还书按钮
+            huanshu(name,author,borrow_nums,id){
+                if(confirm('你确定要归还此书吗？')){
+                    let url='./php/back_books.php?userId='+window.localStorage.getItem('user_code')+'&book_name='+name+'&book_author='+author+'&borrow_nums='+borrow_nums+'&id='+id
+                    axios.get(url).then((res)=>{
+                        console.log(res)
+                        if(res=='ok'){
+                            alert('还书成功')
+                            this.initSelfData()
+                            this.restMoney()
+                        }
+                    })
+                }  
+            },
+            //退出登录
+            layout(){
+                window.location.href='./login.html'
+            },
+            //退出会员
+            tuichuhuiyuan(){
+                if(confirm('你确定要退出会员吗？')){
+                    axios.get('./php/layouthuiyuan.php?userId='+window.localStorage.getItem('user_code')).then((res)=>{
+                        if(res=='ok'){
+                            window.localStorage.setItem('user_code','')
+                            window.location.href='./index.html'
+                        }
+                    })
+                }
+            },
+            //首页
+            shou_ye(){
+                this.num=0
+                this.initSelfData()
+            },
+            //上一页
+            pre_ye(){
+                this.num--
+                this.initSelfData()
+            },
+            //下一页
+            next_ye(){
+                this.num++
+                this.initSelfData()
+            },
+            //尾页
+            wei_ye(){
+                this.num=this.wei_num
+                this.initSelfData()
+            }
+        }
+    })
+</script>
